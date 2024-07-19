@@ -111,8 +111,8 @@ make CROSS_COMPILE=${CROSS_COMPILE}
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # ofinder-app/finder.shn the target rootfs
-mkdir ${OUTDIR}/rootfs/home/finder-app
-cp -r ./finder.sh ./finder-test.sh ./writer ./conf ${OUTDIR}/rootfs/home/finder-app
+
+cp -r ./finder.sh ./finder-test.sh ./writer ${OUTDIR}/rootfs/home
 mkdir ${OUTDIR}/rootfs/home/conf
 cp ./conf/assignment.txt ./conf/username.txt ${OUTDIR}/rootfs/home/conf
 
