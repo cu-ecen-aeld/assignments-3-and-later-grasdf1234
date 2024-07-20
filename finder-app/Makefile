@@ -6,3 +6,5 @@ writer.o : writer.c
 
 clean : 
 		rm -f writer writer.o
+
+all : writer
