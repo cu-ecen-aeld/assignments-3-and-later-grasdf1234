@@ -1,3 +1,3 @@
 #!/bin/sh
 
-finder-test-sh > /tmp/assignment4-result.txt
+finder-test_run.sh > /tmp/assignment4-result.txt
