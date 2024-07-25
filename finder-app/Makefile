@@ -1,3 +1,7 @@
+CFLAGS += -Wall
+
+all : writer
+
 writer : writer.o
 		$(CC) -o writer writer.o
 
@@ -6,5 +10,3 @@ writer.o : writer.c
 
 clean : 
 		rm -f writer writer.o
-
-all : writer
