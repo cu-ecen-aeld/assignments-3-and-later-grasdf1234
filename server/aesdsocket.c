@@ -44,22 +44,30 @@ void sigchld_handler(int s)
 void handle_signal(int signal)
 {
     // Handle SIGINT and SIGTERM signals
-    printf("\nReceived signal %d, closing resources...\n", signal);
-    //syslog(LOG_ERR, "Caught signal, exiting");
-    if (file != NULL)
-    {
-        fclose(file);
-    }
-    if (sockfd != -1)
-    {
-        close(sockfd);
-    }
-    remove(datadir);
-    
-    if (socketbuf != NULL) free(socketbuf);
-    if (filereadbuf != NULL) free(filereadbuf);
+    printf("\nReceived signal %d\n", signal);
 
-    exit(EXIT_SUCCESS);
+    if (signal == SIGINT || signal == SIGTERM)
+    {
+        printf("\n, closing resources...\n");
+
+        // syslog(LOG_ERR, "Caught signal, exiting");
+        if (file != NULL)
+        {
+            fclose(file);
+        }
+        if (sockfd != -1)
+        {
+            close(sockfd);
+        }
+        remove(datadir);
+
+        // if (socketbuf != NULL)
+        //     free(socketbuf);
+        // if (filereadbuf != NULL)
+        //     free(filereadbuf);
+
+        exit(EXIT_SUCCESS);
+    }
 }
 
 // get sockaddr, IPv4 or IPv6:
@@ -160,17 +168,16 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        file = fopen(datadir, "w+");
+        printf("server: waiting for connections...\n");
 
+        file = fopen(datadir, "w+");
         if (file == NULL)
         {
-            printf("Error!");
+            printf("Error! File");
             syslog(LOG_ERR, "Error opening file!");
             closelog();
             exit(1);
         }
-
-        printf("server: waiting for connections...\n");
 
         while (1)
         { // main accept() loop
@@ -211,33 +218,39 @@ int main(int argc, char *argv[])
                 syslog(LOG_DEBUG, "Writing %s to %s", socketbuf, datadir);
                 fprintf(file, "%s", socketbuf);
                 fflush(file);
-                rewind(file);
-                while ((bytes_read = fread(filereadbuf, 1, BUFFERSIZE, file)) > 0)
+
+                if (socketbuf[bytes_received - 1] == '\n')
                 {
-                    syslog(LOG_DEBUG, "read: %i", bytes_read);
-                    printf("Bytes read: %i", bytes_read);
-                    int sent;
-                    if ((sent = send(new_fd, filereadbuf, bytes_read, 0)) == -1)
+                    rewind(file);
+                    while ((bytes_read = fread(filereadbuf, 1, BUFFERSIZE, file)) > 0)
                     {
-                        perror("Send failed");
-                        close(new_fd);
-                        fclose(file);
-                        exit(EXIT_FAILURE);
+                        syslog(LOG_DEBUG, "read: %i", bytes_read);
+                        printf("Bytes read: %i", bytes_read);
+
+                        int sent;
+                        if ((sent = send(new_fd, filereadbuf, bytes_read, 0)) == -1)
+                        {
+                            perror("Send failed");
+                            close(new_fd);
+                            fclose(file);
+                            exit(EXIT_FAILURE);
+                        }
+                        else
+                        {
+                            syslog(LOG_DEBUG, "sent: %i", sent);
+                            printf("Packetend bytes sent: %i, pos: \r\n", sent);
+                        }
                     }
-                    else
-                    {
-                        syslog(LOG_DEBUG, "sent: %i", sent);
-                        printf("Packetend bytes sent: %i, pos: \r\n", sent);
-                    }
+                    break;
                 }
             }
 
             free(socketbuf);
             free(filereadbuf);
             syslog(LOG_DEBUG, "Closed connection from %s", s);
-
             close(new_fd);
         }
+        fclose(file);
     } // end child
 
     // close(new_fd); // parent doesn't need this
