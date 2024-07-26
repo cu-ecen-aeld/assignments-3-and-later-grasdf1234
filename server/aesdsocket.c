@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 
             printf("server: got connection from %s\n", s);
 
-#define BUFFERSIZE 10000000
+#define BUFFERSIZE 500000
             char socketbuf[BUFFERSIZE];
             char filereadbuf[BUFFERSIZE];
             // nt rec = recv(sockfd, buf, BUFFER)
