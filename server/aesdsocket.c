@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 
             printf("server: got connection from %s\n", s);
 
-#define BUFFERSIZE 100000
+#define BUFFERSIZE 10000000
             char socketbuf[BUFFERSIZE];
             char filereadbuf[BUFFERSIZE];
             // nt rec = recv(sockfd, buf, BUFFER)
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
             {
 
                 socketbuf[bytes_received] = '\0'; // Null-terminate the received data
-                printf("Received: %s\n", socketbuf);
+                //printf("Received: %s\n", socketbuf);
 
                 /* code */
                 syslog(LOG_DEBUG, "Writing %s to %s", socketbuf, datadir);
