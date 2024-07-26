@@ -20,6 +20,11 @@
 #define PORT "9000" // the port users will be connecting to
 
 #define BACKLOG 10 // how many pending connections queue will hold
+#define BUFFERSIZE 500000
+size_t bufferSize = BUFFERSIZE;
+
+char *socketbuf;
+char *filereadbuf;
 
 int sockfd, new_fd; // listen on sock_fd, new connection on new_fd
 FILE *file;
@@ -40,7 +45,7 @@ void handle_signal(int signal)
 {
     // Handle SIGINT and SIGTERM signals
     printf("\nReceived signal %d, closing resources...\n", signal);
-    syslog(LOG_ERR, "Caught signal, exiting");
+    //syslog(LOG_ERR, "Caught signal, exiting");
     if (file != NULL)
     {
         fclose(file);
@@ -50,6 +55,10 @@ void handle_signal(int signal)
         close(sockfd);
     }
     remove(datadir);
+    
+    if (socketbuf != NULL) free(socketbuf);
+    if (filereadbuf != NULL) free(filereadbuf);
+
     exit(EXIT_SUCCESS);
 }
 
@@ -131,8 +140,8 @@ int main(int argc, char *argv[])
         printf("daeeeeeemon!");
         daemon = true;
     }
- 
-     if (!daemon || !fork())
+
+    if (!daemon || !fork())
     { // child
         // close(sockfd);
 
@@ -180,10 +189,15 @@ int main(int argc, char *argv[])
 
             printf("server: got connection from %s\n", s);
 
-#define BUFFERSIZE 500000
-            char socketbuf[BUFFERSIZE];
-            char filereadbuf[BUFFERSIZE];
-            // nt rec = recv(sockfd, buf, BUFFER)
+            socketbuf = (char *)malloc(bufferSize + sizeof(char));
+            filereadbuf = (char *)malloc(bufferSize + sizeof(char));
+
+            if ((socketbuf == NULL) || (filereadbuf == NULL))
+            {
+                fprintf(stderr, "Memory allocation failed\n");
+                return 1; // Exit with error code
+            }
+
             int bytes_received;
             int bytes_read;
 
@@ -191,7 +205,7 @@ int main(int argc, char *argv[])
             {
 
                 socketbuf[bytes_received] = '\0'; // Null-terminate the received data
-                //printf("Received: %s\n", socketbuf);
+                // printf("Received: %s\n", socketbuf);
 
                 /* code */
                 syslog(LOG_DEBUG, "Writing %s to %s", socketbuf, datadir);
@@ -201,7 +215,7 @@ int main(int argc, char *argv[])
                 while ((bytes_read = fread(filereadbuf, 1, BUFFERSIZE, file)) > 0)
                 {
                     syslog(LOG_DEBUG, "read: %i", bytes_read);
-
+                    printf("Bytes read: %i", bytes_read);
                     int sent;
                     if ((sent = send(new_fd, filereadbuf, bytes_read, 0)) == -1)
                     {
@@ -213,10 +227,13 @@ int main(int argc, char *argv[])
                     else
                     {
                         syslog(LOG_DEBUG, "sent: %i", sent);
+                        printf("Packetend bytes sent: %i, pos: \r\n", sent);
                     }
                 }
             }
 
+            free(socketbuf);
+            free(filereadbuf);
             syslog(LOG_DEBUG, "Closed connection from %s", s);
 
             close(new_fd);
