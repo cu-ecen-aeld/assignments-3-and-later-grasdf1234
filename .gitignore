@@ -7,3 +7,5 @@ aesd-build
 .vscode/
 test.sh.log
 finder-app/compile_writer.sh
+server/aesdsocket
+server/valgrind-out.txt
