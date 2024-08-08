@@ -1,11 +1,13 @@
+SRC := aesdsocket.c
+TARGET = aesdsocket
+OBJS := $(SRC:.c=.o)
+CC := $(CROSS_COMPILE)gcc
+CFLAGS += -pthread
+LDFLAGS += -lrt
+all: $(TARGET)
 
-all : aesdsocket
+$(TARGET) : $(OBJS)
+	$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(TARGET) $(LDFLAGS) 
 
-aesdsocket : aesdsocket.o
-		$(CC) -o aesdsocket aesdsocket.o -lpthread
-
-aesdsocket.o : aesdsocket.c
-		$(CC) -c aesdsocket.c queue.h -Wall 
-
-clean : 
-		rm -f aesdsocket aesdsocket.o
+clean:
+	-rm -f *.o $(TARGET) *.elf *.map
