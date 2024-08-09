@@ -278,93 +278,95 @@ int main(int argc, char *argv[])
         daemon = true;
     }
 
-    if (!daemon || !fork())
-    { // child
-        // close(sockfd);
-        pthread_t timer_thread;
-        if (pthread_create(&timer_thread, NULL, thread_timer, NULL))
-        {
-            printf("timer Thread failed.");
-            syslog(LOG_ERR, "timer Thread failed.");
-            closelog();
-            exit(1);
-        }
-
-        if (listen(sockfd, BACKLOG) == -1)
-        {
-            perror("listen");
-            exit(1);
-        }
-
-        sa.sa_handler = sigchld_handler; // reap all dead processes
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = SA_RESTART;
-        if (sigaction(SIGCHLD, &sa, NULL) == -1)
-        {
-            perror("sigaction");
-            exit(1);
-        }
-
-        printf("main server: waiting for connections...\n");
-
-        file = fopen(datadir, "w+");
-        if (file == NULL)
-        {
-            printf("Error! File");
-            syslog(LOG_ERR, "Error opening file!");
-            closelog();
-            exit(1);
-        }
-
-        while (1)
-        { // main accept() loop
-            sin_size = sizeof their_addr;
-            printf("main wait for new accept");
-            new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
-            if (new_fd == -1)
+    if (!daemon || (fork() == 0))
+    {
+        { // child
+            // close(sockfd);
+            pthread_t timer_thread;
+            if (pthread_create(&timer_thread, NULL, thread_timer, NULL))
             {
-                perror("accept");
-                continue;
-            }
-
-            inet_ntop(their_addr.ss_family,
-                      get_in_addr((struct sockaddr *)&their_addr),
-                      s, sizeof s);
-
-            syslog(LOG_DEBUG, "Accepted connection from %s", s);
-            printf("server: got connection from %s\n", s);
-
-            pthread_t thread;
-            datap = malloc(sizeof(slist_data_t));
-            datap->done = false;
-            datap->connection_fd = new_fd;
-
-            if (pthread_create(&thread, NULL, thread_connection, datap))
-            {
-                printf("Thread failed.");
-                syslog(LOG_ERR, "Thread failed.");
+                printf("timer Thread failed.");
+                syslog(LOG_ERR, "timer Thread failed.");
                 closelog();
                 exit(1);
             }
-            datap->thread_id = thread;
 
-            printf("newthread: %li\n", datap->thread_id);
-            SLIST_INSERT_HEAD(&head, datap, entries);
-
-            // Read1.
-            printf("Threads: ");
-            SLIST_FOREACH(datap, &head, entries)
+            if (listen(sockfd, BACKLOG) == -1)
             {
-                printf("%ld, ", datap->thread_id);
-                if (datap->done)
-                {
-                    pthread_join(datap->thread_id, NULL);
-                }
+                perror("listen");
+                exit(1);
             }
-            printf("\n");
-        }
 
-        fclose(file);
+            sa.sa_handler = sigchld_handler; // reap all dead processes
+            sigemptyset(&sa.sa_mask);
+            sa.sa_flags = SA_RESTART;
+            if (sigaction(SIGCHLD, &sa, NULL) == -1)
+            {
+                perror("sigaction");
+                exit(1);
+            }
+
+            printf("main server: waiting for connections...\n");
+
+            file = fopen(datadir, "w+");
+            if (file == NULL)
+            {
+                printf("Error! File");
+                syslog(LOG_ERR, "Error opening file!");
+                closelog();
+                exit(1);
+            }
+
+            while (1)
+            { // main accept() loop
+                sin_size = sizeof their_addr;
+                printf("main wait for new accept");
+                new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+                if (new_fd == -1)
+                {
+                    perror("accept");
+                    continue;
+                }
+
+                inet_ntop(their_addr.ss_family,
+                          get_in_addr((struct sockaddr *)&their_addr),
+                          s, sizeof s);
+
+                syslog(LOG_DEBUG, "Accepted connection from %s", s);
+                printf("server: got connection from %s\n", s);
+
+                pthread_t thread;
+                datap = malloc(sizeof(slist_data_t));
+                datap->done = false;
+                datap->connection_fd = new_fd;
+
+                if (pthread_create(&thread, NULL, thread_connection, datap))
+                {
+                    printf("Thread failed.");
+                    syslog(LOG_ERR, "Thread failed.");
+                    closelog();
+                    exit(1);
+                }
+                datap->thread_id = thread;
+
+                printf("newthread: %li\n", datap->thread_id);
+                SLIST_INSERT_HEAD(&head, datap, entries);
+
+                // Read1.
+                printf("Threads: ");
+                SLIST_FOREACH(datap, &head, entries)
+                {
+                    printf("%ld, ", datap->thread_id);
+                    if (datap->done)
+                    {
+                        pthread_join(datap->thread_id, NULL);
+                    }
+                }
+                printf("\n");
+            }
+
+            fclose(file);
+        }
     } // end child
 
     // close(new_fd); // parent doesn't need this
