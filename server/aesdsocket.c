@@ -134,7 +134,7 @@ void *thread_connection(void *arg)
             while ((bytes_read = fread(filereadbuf, 1, BUFFERSIZE, file)) > 0)
             {
                 syslog(LOG_DEBUG, "read: %i", bytes_read);
-                //printf("thread Bytes read: %i\n", bytes_read);
+                // printf("thread Bytes read: %i\n", bytes_read);
 
                 int sent;
                 if ((sent = send(this_datap->connection_fd, filereadbuf, bytes_read, 0)) == -1)
@@ -148,7 +148,7 @@ void *thread_connection(void *arg)
                 else
                 {
                     syslog(LOG_DEBUG, "sent: %i", sent);
-                    //printf("thread Packet end bytes sent: %i\r\n", sent);
+                    // printf("thread Packet end bytes sent: %i\r\n", sent);
                 }
             }
             // Unlock the mutex after accessing the shared resource
@@ -156,8 +156,8 @@ void *thread_connection(void *arg)
             break;
         }
     }
-    //printf("closed with: %i", close(this_datap->connection_fd));
-    //  exit(EXIT_FAILURE);
+    // printf("closed with: %i", close(this_datap->connection_fd));
+    //   exit(EXIT_FAILURE);
 
     free(socketbuf);
     free(filereadbuf);
@@ -174,6 +174,7 @@ void *thread_timer(void *arg)
     char buffer[100];
     time_t current_time;
     struct tm *time_info;
+    printf("hello timer");
 
     while (1)
     {
@@ -294,6 +295,7 @@ int main(int argc, char *argv[])
             if (listen(sockfd, BACKLOG) == -1)
             {
                 perror("listen");
+                printf("main listen error.");
                 exit(1);
             }
 
@@ -302,6 +304,7 @@ int main(int argc, char *argv[])
             sa.sa_flags = SA_RESTART;
             if (sigaction(SIGCHLD, &sa, NULL) == -1)
             {
+                printf("main sigaction error.");
                 perror("sigaction");
                 exit(1);
             }
@@ -325,6 +328,8 @@ int main(int argc, char *argv[])
                 if (new_fd == -1)
                 {
                     perror("accept");
+                    printf("main accept error.");
+
                     continue;
                 }
 
@@ -353,16 +358,16 @@ int main(int argc, char *argv[])
                 SLIST_INSERT_HEAD(&head, datap, entries);
 
                 // Read1.
-                //printf("Threads: ");
+                // printf("Threads: ");
                 SLIST_FOREACH(datap, &head, entries)
                 {
-                    //printf("%ld, ", datap->thread_id);
+                    // printf("%ld, ", datap->thread_id);
                     if (datap->done)
                     {
                         pthread_join(datap->thread_id, NULL);
                     }
                 }
-                //printf("\n");
+                // printf("\n");
             }
 
             fclose(file);
