@@ -174,7 +174,7 @@ void *thread_timer(void *arg)
     char buffer[100];
     time_t current_time;
     struct tm *time_info;
-    printf("hello timer");
+    printf("hello timer\n");
 
     while (1)
     {
@@ -189,7 +189,7 @@ void *thread_timer(void *arg)
 
         // Write the formatted timestamp to the file
         fputs(buffer, file);
-        printf("timerwrite: %s", buffer);
+        printf("timerwrite: %s\n", buffer);
         pthread_mutex_unlock(&counter_mutex);
 
         // Sleep for 10 seconds
@@ -323,7 +323,7 @@ int main(int argc, char *argv[])
             while (1)
             { // main accept() loop
                 sin_size = sizeof their_addr;
-                printf("main wait for new accept");
+                printf("main wait for new accept\n");
                 new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
                 if (new_fd == -1)
                 {
